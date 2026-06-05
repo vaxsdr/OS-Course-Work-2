@@ -23,5 +23,20 @@ int main(int argc, char *argv[]) {
 
     printf("Socket created successfully on port %d\n", port);
     close(server_sock);
+
+while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        int client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_len);
+        if (client_sock < 0) {
+            continue;
+        }
+        
+        printf("Client connected! (Closing connection for now...)\n");
+        close(client_sock); 
+    }
+
+    
+
     return 0;
 }
