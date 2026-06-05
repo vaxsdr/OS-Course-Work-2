@@ -37,6 +37,6 @@ while (1) {
     }
 
     
-
+    close(server_sock);
     return 0;
 }
