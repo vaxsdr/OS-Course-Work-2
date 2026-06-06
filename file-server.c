@@ -2,9 +2,31 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 
-int main(int argc, char *argv[]) {
+void *client_handler(void *socket_desc) {
+    int client_sock = *(int*)socket_desc;
+    free(socket_desc); 
+
+    char command_line[512] = {0};
+    int idx = 0;
+    char ch;
+
+    while (recv(client_sock, &ch, 1, 0) > 0) {
+        if (ch == '\n') break;
+        if (idx < 511) {
+            command_line[idx++] = ch;
+        }
+    }
+    command_line[idx] = '\0';
+    printf("Received command background: %s\n", command_line);
+
+    close(client_sock); 
+    return NULL;
+}
+
+    int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
         exit(1);
@@ -32,8 +54,16 @@ while (1) {
             continue;
         }
         
-        printf("Client connected! (Closing connection for now...)\n");
-        close(client_sock); 
+        pthread_t thread_id;
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = client_sock;
+
+        if (pthread_create(&thread_id, NULL, client_handler, (void*)new_sock) == 0) {
+            pthread_detach(thread_id); 
+        } else {
+            free(new_sock);
+            close(client_sock);
+        }
     }
 
     
