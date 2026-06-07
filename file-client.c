@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     }
 
 if (strcmp(cmd, "ls") == 0) {
-send(sock, "ls", 2, 0);
+    send(sock, "ls ", 3, 0);
 
 char buffer[BUFFER_SIZE];
 ssize_t bytes_received;

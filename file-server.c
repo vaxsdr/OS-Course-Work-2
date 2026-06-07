@@ -126,7 +126,7 @@ void *client_handler(void *socket_desc) {
         exit(1);
     }
 
-    printf("Socket created successfully on port %d\n", port);
+    printf("Listening on %d\n", port);
     fflush(stdout);
 
 while (1) {
