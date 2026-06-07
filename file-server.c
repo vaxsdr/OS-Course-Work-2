@@ -2,7 +2,30 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <pthread.h>
+
+#define BUFFER_SIZE 4096
+
+
+void handle_ls(int client_sock) {
+    DIR *d = opendir("."); 
+    struct dirent *dir;
+    char buffer[BUFFER_SIZE] = {0};
+
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            strcat(buffer, dir->d_name);
+            strcat(buffer, "\n"); 
+        }
+        closedir(d);
+    }
+    send(client_sock, buffer, strlen(buffer), 0);
+}
+
 
 
 void *client_handler(void *socket_desc) {
@@ -20,8 +43,18 @@ void *client_handler(void *socket_desc) {
         }
     }
     command_line[idx] = '\0';
-    printf("Received command background: %s\n", command_line);
 
+    char cmd[10] = {0};
+    char filename[256] = {0};
+    sscanf(command_line, "%s %s", cmd, filename);
+
+
+    if (strcmp(cmd, "ls") == 0) {
+        handle_ls(client_sock);
+    }
+
+
+    
     close(client_sock); 
     return NULL;
 }
