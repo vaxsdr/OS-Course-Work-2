@@ -8,19 +8,56 @@
 #define BUFFER_SIZE 4096
 
 
-void handle_download(int client_sock, const char *filename) {
-    FILE *fp = fopen(filename, "rb");
+void handle_ls(int client_sock) {
+    DIR *d = opendir(".");
+    struct dirent *dir;
+    char buffer[BUFFER_SIZE] = {0};
+
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            strcat(buffer, dir->d_name);
+            strcat(buffer, "\n");
+        }
+        closedir(d);
+    }
+    send(client_sock, buffer, strlen(buffer), 0);
+}
+
+
+
+void handle_upload(int client_sock, const char *filename) {
+    FILE *fp = fopen(filename, "wb"); // Отваряне в бинарен режим за писане
     if (!fp) {
+        perror("fopen failed for upload");
         return;
     }
-    char buffer[BUFFER_SIZE];
 
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_received;
+    // Четем от мрежата и записваме на диска, докато сокетът се затвори
+    while ((bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0)) > 0) {
+        fwrite(buffer, 1, bytes_received, fp);
+    }
+    fclose(fp);
+}
+
+void handle_download(int client_sock, const char *filename) {
+    FILE *fp = fopen(filename, "rb"); 
+    if (!fp) {
+        return; 
+    }
+
+    char buffer[BUFFER_SIZE];
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, fp)) > 0) {
         send(client_sock, buffer, bytes_read, 0);
     }
     fclose(fp);
 }
+
 
 
 
@@ -51,7 +88,9 @@ void *client_handler(void *socket_desc) {
     else if (strcmp(cmd, "download") == 0) { // kum handle_downl
         handle_download(client_sock, filename);
     }
-
+    else if (strcmp(cmd, "upload") == 0) {
+        handle_upload(client_sock, filename); 
+    }
     
     close(client_sock); 
     return NULL;
