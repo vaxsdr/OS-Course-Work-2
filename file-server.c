@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <string.h>
 
 #define BUFFER_SIZE 4096
 
@@ -65,16 +66,10 @@ void *client_handler(void *socket_desc) {
     free(socket_desc); 
 
     char command_line[512] = {0};
-    int idx = 0;
-    char ch;
-
-    while (recv(client_sock, &ch, 1, 0) > 0) {
-        if (ch == '\n') break;
-        if (idx < 511) {
-            command_line[idx++] = ch;
-        }
+    if (recv(client_sock, command_line, sizeof(command_line) - 1, 0) <= 0) {
+        close(client_sock);
+        return NULL;
     }
-    command_line[idx] = '\0';
 
     char cmd[10] = {0};
     char filename[256] = {0};
@@ -112,8 +107,27 @@ void *client_handler(void *socket_desc) {
     int opt = 1;
     setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // na 0.0.0.0
+    server_addr.sin_port = htons(port);
+
+    if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Bind failed");
+        close(server_sock);
+        exit(1);
+    }
+
+    if (listen(server_sock, 10) < 0) {
+        perror("Listen failed");
+        close(server_sock);
+        exit(1);
+    }
+
     printf("Socket created successfully on port %d\n", port);
-    close(server_sock);
+    fflush(stdout);
 
 while (1) {
         struct sockaddr_in client_addr;
