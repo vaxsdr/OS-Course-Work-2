@@ -8,22 +8,18 @@
 #define BUFFER_SIZE 4096
 
 
-void handle_ls(int client_sock) {
-    DIR *d = opendir("."); 
-    struct dirent *dir;
-    char buffer[BUFFER_SIZE] = {0};
-
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0) {
-                continue;
-            }
-            strcat(buffer, dir->d_name);
-            strcat(buffer, "\n"); 
-        }
-        closedir(d);
+void handle_download(int client_sock, const char *filename) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+        return;
     }
-    send(client_sock, buffer, strlen(buffer), 0);
+    char buffer[BUFFER_SIZE];
+
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, fp)) > 0) {
+        send(client_sock, buffer, bytes_read, 0);
+    }
+    fclose(fp);
 }
 
 
@@ -52,7 +48,9 @@ void *client_handler(void *socket_desc) {
     if (strcmp(cmd, "ls") == 0) {
         handle_ls(client_sock);
     }
-
+    else if (strcmp(cmd, "download") == 0) { // kum handle_downl
+        handle_download(client_sock, filename);
+    }
 
     
     close(client_sock); 
