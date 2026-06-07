@@ -29,7 +29,7 @@ void handle_ls(int client_sock) {
 
 
 void handle_upload(int client_sock, const char *filename) {
-    FILE *fp = fopen(filename, "wb"); // Отваряне в бинарен режим за писане
+    FILE *fp = fopen(filename, "wb"); 
     if (!fp) {
         perror("fopen failed for upload");
         return;
@@ -37,7 +37,6 @@ void handle_upload(int client_sock, const char *filename) {
 
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
-    // Четем от мрежата и записваме на диска, докато сокетът се затвори
     while ((bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0)) > 0) {
         fwrite(buffer, 1, bytes_received, fp);
     }
